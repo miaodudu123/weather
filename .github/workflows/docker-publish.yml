@@ -1,0 +1,34 @@
+name: Docker Build and Push
+
+on:
+  release:
+    types: [published]  
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract release version
+        id: get-version
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "SHORT_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/weather-app:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/weather-app:${{ env.SHORT_VERSION }}
+          labels: |
+            org.opencontainers.image.source=$GITHUB_REPOSITORY
