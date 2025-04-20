@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  
   app:
     image: your-dockerhub-username/weather-app:latest
     container_name: weather-app
@@ -14,7 +13,6 @@ services:
       - weather-network
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-
 
   nginx:
     image: nginx:alpine
@@ -29,7 +27,6 @@ services:
     restart: unless-stopped
     networks:
       - weather-network
-
 
   watchtower:
     image: containrrr/watchtower
