@@ -2,7 +2,8 @@ name: Docker Build and Push
 
 on:
   release:
-    types: [published]  
+    types: [published]
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -16,11 +17,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract release version
-        id: get-version
+      - name: Sanitize version tag
+        id: sanitize-version
         run: |
-          echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          echo "SHORT_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          # 提取纯净版本号（处理v前缀和特殊字符）
+          RAW_VERSION=${GITHUB_REF#refs/tags/}
+          CLEAN_VERSION=$(echo "$RAW_VERSION" | sed 's/^v//; s/[^a-zA-Z0-9.-]/-/g')
+          echo "SANITIZED_VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
+          echo "::notice::Original tag: $RAW_VERSION → Sanitized: $CLEAN_VERSION"
 
       - name: Build and Push
         uses: docker/build-push-action@v5
@@ -29,6 +33,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/weather-app:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/weather-app:${{ env.SHORT_VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/weather-app:${{ env.SANITIZED_VERSION }}
           labels: |
             org.opencontainers.image.source=$GITHUB_REPOSITORY
+            org.opencontainers.image.version=${{ env.SANITIZED_VERSION }}
