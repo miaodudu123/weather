@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Flask 应用服务
+  app:
+    image: your-dockerhub-username/weather-app:latest
+    container_name: weather-app
+    environment:
+      - API_KEY=${API_KEY}  # 从.env文件读取
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    networks:
+      - weather-network
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: weather-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl  # SSL证书目录（可选）
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - weather-network
+
+  # 自动更新容器服务
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 300 --cleanup  # 每5分钟检查一次更新
+    restart: unless-stopped
+    networks:
+      - weather-network
+
+networks:
+  weather-network:
+    driver: bridge
